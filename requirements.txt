@@ -1,0 +1,7 @@
+# PyTorch устанавливается отдельно через install.bat
+# vocos и LavaSR устанавливаются отдельно через install.bat
+librosa
+soundfile
+gradio>=4.0.0
+numpy
+huggingface_hub

@@ -1,0 +1,23 @@
+# Portable runtime directories
+python/
+downloads/
+models/
+cache/
+temp/
+output/
+
+# GPU config
+cuda_version.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
