@@ -132,10 +132,17 @@ def _ensure_model():
     return None
 
 
-def _enhance_file(file_path, input_sr, denoise):
-    """Внутренняя функция улучшения одного файла. Возвращает (sr, numpy_int16) или кидает исключение."""
+def _detect_sample_rate(file_path):
+    """Определение частоты дискретизации аудиофайла."""
+    import librosa
+    return librosa.get_samplerate(file_path)
+
+
+def _enhance_file(file_path, denoise):
+    """Внутренняя функция улучшения одного файла. Возвращает (sr, numpy_int16, detected_sr) или кидает исключение."""
+    detected_sr = _detect_sample_rate(file_path)
     input_audio_tensor, actual_sr = lava_model.load_audio(
-        file_path, input_sr=int(input_sr)
+        file_path, input_sr=detected_sr
     )
 
     # Автоматическое включение батчинга для длинных файлов (>10 сек на 16кГц)
@@ -151,7 +158,7 @@ def _enhance_file(file_path, input_sr, denoise):
     output_np = output_audio_tensor.cpu().numpy().squeeze()
     output_np = (np.clip(output_np, -1.0, 1.0) * 32767).astype(np.int16)
 
-    return 48000, output_np
+    return 48000, output_np, detected_sr
 
 
 def _save_wav(filename_stem, sr, audio_int16):
@@ -169,7 +176,7 @@ def _save_wav(filename_stem, sr, audio_int16):
 # ============================================================
 # Обработка одного файла
 # ============================================================
-def process_audio(input_file, input_sr, denoise):
+def process_audio(input_file, denoise):
     """Обработка аудио: улучшение и суперразрешение."""
     if input_file is None:
         gr.Warning("Загрузите аудиофайл!")
@@ -183,13 +190,15 @@ def process_audio(input_file, input_sr, denoise):
     try:
         start_time = time.time()
 
+        detected_sr = _detect_sample_rate(input_file)
+
         # Загрузка для отображения входа
-        input_audio_tensor, _ = lava_model.load_audio(input_file, input_sr=int(input_sr))
+        input_audio_tensor, _ = lava_model.load_audio(input_file, input_sr=detected_sr)
         input_np = input_audio_tensor.cpu().numpy().squeeze()
         input_np = (np.clip(input_np, -1.0, 1.0) * 32767).astype(np.int16)
 
         # Улучшение
-        out_sr, output_np = _enhance_file(input_file, input_sr, denoise)
+        out_sr, output_np, _ = _enhance_file(input_file, denoise)
 
         elapsed = time.time() - start_time
         duration_sec = len(output_np) / out_sr
@@ -199,7 +208,7 @@ def process_audio(input_file, input_sr, denoise):
             f"Готово за {elapsed:.1f} сек | "
             f"Длительность: {duration_sec:.1f} сек | "
             f"Устройство: {device_name} | "
-            f"Вход: {int(input_sr)} Гц -> Выход: 48000 Гц"
+            f"Вход: {detected_sr} Гц -> Выход: 48000 Гц"
         )
 
         return (16000, input_np), (out_sr, output_np), status
@@ -226,7 +235,7 @@ def save_audio(enhanced_audio):
 # ============================================================
 # Микрофон
 # ============================================================
-def process_microphone(mic_audio, input_sr, denoise):
+def process_microphone(mic_audio, denoise):
     """Обработка аудио с микрофона."""
     if mic_audio is None:
         gr.Warning("Запишите аудио с микрофона!")
@@ -245,13 +254,13 @@ def process_microphone(mic_audio, input_sr, denoise):
 
     sf.write(str(temp_path), mic_float, mic_sr)
 
-    return process_audio(str(temp_path), input_sr, denoise)
+    return process_audio(str(temp_path), denoise)
 
 
 # ============================================================
 # Пакетная обработка
 # ============================================================
-def process_batch(files, prefix, input_sr, denoise):
+def process_batch(files, prefix, denoise):
     """Пакетная обработка списка аудиофайлов. Генератор — yield обновляет лог и плееры в реальном времени."""
     global batch_stop_flag
     batch_stop_flag = False
@@ -300,7 +309,7 @@ def process_batch(files, prefix, input_sr, denoise):
         try:
             start_time = time.time()
 
-            out_sr, output_np = _enhance_file(file_path, input_sr, denoise)
+            out_sr, output_np, detected_sr = _enhance_file(file_path, denoise)
 
             out_filename = f"{fname}.wav"
             out_filepath = batch_output_dir / out_filename
@@ -316,7 +325,7 @@ def process_batch(files, prefix, input_sr, denoise):
 
             log_lines[-1] = (
                 f"[{i+1}/{total}] {fname} -> {out_filename} "
-                f"({duration_sec:.1f} сек аудио, за {elapsed:.1f} сек)"
+                f"({detected_sr} Гц -> 48000 Гц, {duration_sec:.1f} сек, за {elapsed:.1f} сек)"
             )
             yield "\n".join(log_lines), result_files
 
@@ -419,18 +428,10 @@ with gr.Blocks(title="LavaSR — Улучшение аудио") as demo:
                     )
 
                     with gr.Accordion("Настройки", open=True):
-                        sr_slider = gr.Slider(
-                            minimum=8000,
-                            maximum=48000,
-                            value=16000,
-                            step=1000,
-                            label="Частота дискретизации входного аудио (Гц)",
-                            info="Укажите частоту исходного аудио. По умолчанию 16000 Гц.",
-                        )
                         denoise_toggle = gr.Checkbox(
-                            label="Шумоподавление",
+                            label="Очистить запись от шума",
                             value=False,
-                            info="Включить удаление шума из аудио.",
+                            info="Удаление фонового шума из аудио.",
                         )
 
                     enhance_btn = gr.Button(
@@ -467,7 +468,7 @@ with gr.Blocks(title="LavaSR — Улучшение аудио") as demo:
 
             enhance_btn.click(
                 fn=process_audio,
-                inputs=[input_audio, sr_slider, denoise_toggle],
+                inputs=[input_audio, denoise_toggle],
                 outputs=[resampled_output, enhanced_output, status_text],
             )
 
@@ -489,16 +490,8 @@ with gr.Blocks(title="LavaSR — Улучшение аудио") as demo:
                     )
 
                     with gr.Accordion("Настройки", open=True):
-                        mic_sr_slider = gr.Slider(
-                            minimum=8000,
-                            maximum=48000,
-                            value=16000,
-                            step=1000,
-                            label="Целевая частота дискретизации (Гц)",
-                            info="К какой частоте будет ресемплировано входное аудио.",
-                        )
                         mic_denoise = gr.Checkbox(
-                            label="Шумоподавление",
+                            label="Очистить запись от шума",
                             value=True,
                             info="Рекомендуется для записи с микрофона.",
                         )
@@ -537,7 +530,7 @@ with gr.Blocks(title="LavaSR — Улучшение аудио") as demo:
 
             mic_enhance_btn.click(
                 fn=process_microphone,
-                inputs=[mic_input, mic_sr_slider, mic_denoise],
+                inputs=[mic_input, mic_denoise],
                 outputs=[mic_resampled, mic_enhanced, mic_status],
             )
 
@@ -572,15 +565,8 @@ with gr.Blocks(title="LavaSR — Улучшение аудио") as demo:
                             placeholder="podcast_cleaned",
                             info="Результаты сохранятся в output/<имя>/. Если пусто — создастся по дате.",
                         )
-                        batch_sr_slider = gr.Slider(
-                            minimum=8000,
-                            maximum=48000,
-                            value=16000,
-                            step=1000,
-                            label="Частота дискретизации входных файлов (Гц)",
-                        )
                         batch_denoise = gr.Checkbox(
-                            label="Шумоподавление",
+                            label="Очистить запись от шума",
                             value=False,
                         )
 
@@ -606,16 +592,23 @@ with gr.Blocks(title="LavaSR — Улучшение аудио") as demo:
                     )
 
                     gr.Markdown("**Результаты — прослушивание:**")
-                    batch_results = gr.File(
-                        label="Обработанные файлы",
-                        file_count="multiple",
-                        interactive=False,
-                    )
+                    batch_results_state = gr.State([])
+
+                    @gr.render(inputs=[batch_results_state])
+                    def render_batch_players(file_list):
+                        if not file_list:
+                            return
+                        for fp in file_list:
+                            gr.Audio(
+                                value=fp,
+                                label=Path(fp).stem,
+                                interactive=False,
+                            )
 
             batch_start_btn.click(
                 fn=process_batch,
-                inputs=[batch_files, batch_prefix, batch_sr_slider, batch_denoise],
-                outputs=[batch_log, batch_results],
+                inputs=[batch_files, batch_prefix, batch_denoise],
+                outputs=[batch_log, batch_results_state],
             )
 
             batch_stop_btn.click(
