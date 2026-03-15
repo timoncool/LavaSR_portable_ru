@@ -252,18 +252,18 @@ def process_microphone(mic_audio, input_sr, denoise):
 # Пакетная обработка
 # ============================================================
 def process_batch(files, prefix, input_sr, denoise):
-    """Пакетная обработка списка аудиофайлов. Генератор — yield обновляет лог в реальном времени."""
+    """Пакетная обработка списка аудиофайлов. Генератор — yield обновляет лог и плееры в реальном времени."""
     global batch_stop_flag
     batch_stop_flag = False
 
     if not files:
         gr.Warning("Загрузите аудиофайлы!")
-        yield "Файлы не выбраны."
+        yield "Файлы не выбраны.", []
         return
 
     err = _ensure_model()
     if err:
-        yield f"Ошибка: {err}"
+        yield f"Ошибка: {err}", []
         return
 
     # Создаём подпапку для результатов
@@ -276,6 +276,7 @@ def process_batch(files, prefix, input_sr, denoise):
 
     total = len(files)
     log_lines = []
+    result_files = []
     success_count = 0
     error_count = 0
     start_total = time.time()
@@ -284,17 +285,17 @@ def process_batch(files, prefix, input_sr, denoise):
     log_lines.append(f"Пакетная обработка: {total} файлов")
     log_lines.append(f"Устройство: {device_name} | Папка: {batch_output_dir}")
     log_lines.append("=" * 50)
-    yield "\n".join(log_lines)
+    yield "\n".join(log_lines), result_files
 
     for i, file_path in enumerate(files):
         if batch_stop_flag:
             log_lines.append(f"\nОстановлено пользователем после {i} из {total} файлов.")
-            yield "\n".join(log_lines)
+            yield "\n".join(log_lines), result_files
             break
 
         fname = Path(file_path).stem
         log_lines.append(f"\n[{i+1}/{total}] Обработка: {fname}...")
-        yield "\n".join(log_lines)
+        yield "\n".join(log_lines), result_files
 
         try:
             start_time = time.time()
@@ -310,17 +311,19 @@ def process_batch(files, prefix, input_sr, denoise):
             duration_sec = len(output_np) / out_sr
             success_count += 1
 
-            # Заменяем "Обработка..." на результат
+            # Добавляем файл в список результатов для плееров
+            result_files.append(str(out_filepath))
+
             log_lines[-1] = (
                 f"[{i+1}/{total}] {fname} -> {out_filename} "
                 f"({duration_sec:.1f} сек аудио, за {elapsed:.1f} сек)"
             )
-            yield "\n".join(log_lines)
+            yield "\n".join(log_lines), result_files
 
         except Exception as e:
             error_count += 1
             log_lines[-1] = f"[{i+1}/{total}] {fname}: ОШИБКА - {e}"
-            yield "\n".join(log_lines)
+            yield "\n".join(log_lines), result_files
 
     elapsed_total = time.time() - start_total
     log_lines.append("\n" + "=" * 50)
@@ -329,7 +332,7 @@ def process_batch(files, prefix, input_sr, denoise):
         f"из {total} файлов за {elapsed_total:.1f} сек"
     )
     log_lines.append(f"Результаты: {batch_output_dir}")
-    yield "\n".join(log_lines)
+    yield "\n".join(log_lines), result_files
 
 
 def stop_batch():
@@ -376,20 +379,18 @@ theme = gr.themes.Base(
 
 _, device_info_str = get_device()
 
-with gr.Blocks(
-    title="LavaSR — Улучшение аудио",
-    theme=theme,
-    css="""
-        .status-bar {
-            padding: 8px 12px;
-            border-radius: 6px;
-            background: #24283b;
-            color: #7aa2f7;
-            font-family: monospace;
-        }
-        footer { display: none !important; }
-    """,
-) as demo:
+APP_CSS = """
+    .status-bar {
+        padding: 8px 12px;
+        border-radius: 6px;
+        background: #24283b;
+        color: #7aa2f7;
+        font-family: monospace;
+    }
+    footer { display: none !important; }
+"""
+
+with gr.Blocks(title="LavaSR — Улучшение аудио") as demo:
 
     gr.Markdown(
         f"# LavaSR — Улучшение и суперразрешение аудио\n"
@@ -597,17 +598,24 @@ with gr.Blocks(
 
                 with gr.Column(scale=1):
                     batch_log = gr.Textbox(
-                        label="Результаты обработки",
+                        label="Лог обработки",
                         interactive=False,
-                        lines=20,
-                        max_lines=50,
+                        lines=15,
+                        max_lines=40,
                         elem_classes=["status-bar"],
+                    )
+
+                    gr.Markdown("**Результаты — прослушивание:**")
+                    batch_results = gr.File(
+                        label="Обработанные файлы",
+                        file_count="multiple",
+                        interactive=False,
                     )
 
             batch_start_btn.click(
                 fn=process_batch,
                 inputs=[batch_files, batch_prefix, batch_sr_slider, batch_denoise],
-                outputs=[batch_log],
+                outputs=[batch_log, batch_results],
             )
 
             batch_stop_btn.click(
@@ -650,8 +658,10 @@ if __name__ == "__main__":
 
     demo.queue(default_concurrency_limit=2).launch(
         server_name="127.0.0.1",
-        server_port=7860,
+        server_port=None,
         share=False,
         show_error=True,
         inbrowser=True,
+        theme=theme,
+        css=APP_CSS,
     )
