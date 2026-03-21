@@ -4,11 +4,6 @@
 
 Портативная русская версия [LavaSR](https://github.com/ysharma3501/LavaSR) — ультрабыстрой модели улучшения речи.
 
-## Авторы
-
-- **@Nerual Dreaming** — [neuro-cartel.com](https://neuro-cartel.com) | основатель [ArtGeneration.me](https://artgeneration.me)
-- **Нейро-Софт** ([t.me/neuroport](https://t.me/neuroport)) — репаки и портативки нейросетей
-
 ## Возможности
 
 - **Повышение частоты дискретизации** — апсемплинг с 8-48 кГц до чистых 48 кГц
@@ -128,6 +123,10 @@ LavaSR_portable_ru/
 - [Vocos](https://github.com/gemelo-ai/vocos) — нейровокодер
 - [UL-UNAS](https://github.com/langtech-bsc/vocos) — архитектура шумоподавления
 
+## Лицензия
+
+Apache 2.0 (следует лицензии оригинального LavaSR)
+
 ## Другие портативные нейросети
 
 | Проект | Описание |
@@ -138,9 +137,10 @@ LavaSR_portable_ru/
 | [SuperCaption Qwen3-VL](https://github.com/timoncool/SuperCaption_Qwen3-VL) | Генерация описаний изображений |
 | [VideoSOS](https://github.com/timoncool/videosos) | AI-видеопродакшн в браузере |
 
-## Лицензия
+## Авторы
 
-Apache 2.0 (следует лицензии оригинального LavaSR)
+- **@Nerual Dreaming** — [neuro-cartel.com](https://neuro-cartel.com) | основатель [ArtGeneration.me](https://artgeneration.me)
+- **Нейро-Софт** ([t.me/neuroport](https://t.me/neuroport)) — репаки и портативки нейросетей
 
 ---
 
