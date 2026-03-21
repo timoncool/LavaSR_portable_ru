@@ -126,6 +126,16 @@ LavaSR_portable_ru/
 - [Vocos](https://github.com/gemelo-ai/vocos) — нейровокодер
 - [UL-UNAS](https://github.com/langtech-bsc/vocos) — архитектура шумоподавления
 
+## Другие портативные нейросети
+
+| Проект | Описание |
+|--------|----------|
+| [Foundation Music Lab](https://github.com/timoncool/RC-stable-audio-tools-portable) | Генерация музыки + таймлайн-редактор |
+| [VibeVoice ASR](https://github.com/timoncool/VibeVoice_ASR_portable_ru) | Распознавание речи (ASR) |
+| [Qwen3-TTS](https://github.com/timoncool/Qwen3-TTS_portable_rus) | Синтез речи (TTS) от Qwen |
+| [SuperCaption Qwen3-VL](https://github.com/timoncool/SuperCaption_Qwen3-VL) | Генерация описаний изображений |
+| [VideoSOS](https://github.com/timoncool/videosos) | AI-видеопродакшн в браузере |
+
 ## Лицензия
 
 Apache 2.0 (следует лицензии оригинального LavaSR)
