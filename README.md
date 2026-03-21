@@ -1,11 +1,13 @@
 # LavaSR Portable — Улучшение и суперразрешение аудио
 
+[![Stars](https://img.shields.io/github/stars/timoncool/LavaSR_portable_ru?style=social)](https://github.com/timoncool/LavaSR_portable_ru/stargazers)
+
 Портативная русская версия [LavaSR](https://github.com/ysharma3501/LavaSR) — ультрабыстрой модели улучшения речи.
 
 ## Авторы
 
-- Собрал [Nerual Dreaming](https://t.me/nerual_dreming) — основатель [ArtGeneration.me](https://artgeneration.me/), техноблогер и нейро-евангелист.
-- [Нейро-Софт](https://t.me/neuroport) — репаки и портативки полезных нейросетей
+- **@Nerual Dreaming** — [neuro-cartel.com](https://neuro-cartel.com) | основатель [ArtGeneration.me](https://artgeneration.me)
+- **Нейро-Софт** ([t.me/neuroport](https://t.me/neuroport)) — репаки и портативки нейросетей
 
 ## Возможности
 
@@ -130,7 +132,7 @@ LavaSR_portable_ru/
 
 | Проект | Описание |
 |--------|----------|
-| [Foundation Music Lab](https://github.com/timoncool/RC-stable-audio-tools-portable) | Генерация музыки + таймлайн-редактор |
+| [Foundation Music Lab](https://github.com/timoncool/Foundation-Music-Lab) | Генерация музыки + таймлайн-редактор |
 | [VibeVoice ASR](https://github.com/timoncool/VibeVoice_ASR_portable_ru) | Распознавание речи (ASR) |
 | [Qwen3-TTS](https://github.com/timoncool/Qwen3-TTS_portable_rus) | Синтез речи (TTS) от Qwen |
 | [SuperCaption Qwen3-VL](https://github.com/timoncool/SuperCaption_Qwen3-VL) | Генерация описаний изображений |
@@ -139,3 +141,9 @@ LavaSR_portable_ru/
 ## Лицензия
 
 Apache 2.0 (следует лицензии оригинального LavaSR)
+
+---
+
+> **Если проект полезен — поставьте звёздочку!**
+
+[![Star History Chart](https://api.star-history.com/svg?repos=timoncool/LavaSR_portable_ru&type=Date)](https://star-history.com/#timoncool/LavaSR_portable_ru&Date)
